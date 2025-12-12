@@ -35,19 +35,19 @@ movie recommender란?
 사용자 입력과 UI 상태를 한 곳에서 관리하기 위한 객체입니다.
 
 
-state = {
+
   q: '',               // 검색어
   type: 'all',         // 콘텐츠 타입
   genre: 'all',        // 장르
   sort: 'default',     // 정렬 기준
   favorites: [],       // 즐겨찾기 목록
   showingFav: false    // 즐겨찾기만 보기
-}
+
 
 
 
 역할 분담
-------------
+----
 
 기획 임아영
 
