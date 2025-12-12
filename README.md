@@ -34,7 +34,7 @@ movie recommender란?
 
 사용자 입력과 UI 상태를 한 곳에서 관리하기 위한 객체입니다.
 
-```js
+
 state = {
   q: '',               // 검색어
   type: 'all',         // 콘텐츠 타입
