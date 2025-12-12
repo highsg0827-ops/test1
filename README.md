@@ -36,12 +36,12 @@ movie recommender란?
 
 
 
-  q: '',               // 검색어
-  type: 'all',         // 콘텐츠 타입
-  genre: 'all',        // 장르
-  sort: 'default',     // 정렬 기준
-  favorites: [],       // 즐겨찾기 목록
-  showingFav: false    // 즐겨찾기만 보기
+ - q: '',               : 검색어
+ - type: 'all',         : 콘텐츠 타입
+ - genre: 'all',        : 장르
+  -sort: 'default',     : 정렬 기준
+  -favorites: [],       : 즐겨찾기 목록
+  -showingFav: false    : 즐겨찾기만 보기
 
 
 
