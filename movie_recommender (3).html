@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Movie Recommender — Modern Black & Gold</title>
+  <meta name="description" content="모던 블랙&골드 테마의 간단한 영화 추천 페이지. 검색 · 필터 · 정렬 · 무작위 추천 · 찜 · 리뷰 · 스트리밍 링크" />
+  <style>
+    :root{--bg:#0b0b0b;--card:#0f1113;--muted:#9aa3a8;--gold:#d4af37;--glass:rgba(255,255,255,0.03)}
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; color:#e9eef6;background:linear-gradient(180deg,#080808 0%, #0f0f10 100%)}
+    .wrap{max-width:1100px;margin:28px auto;padding:20px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:16px}
+    .brand{display:flex;gap:14px;align-items:center}
+    .logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,var(--gold),#ffd85a);display:flex;align-items:center;justify-content:center;color:#081018;font-weight:800;box-shadow:0 8px 30px rgba(0,0,0,0.6)}
+    h1{margin:0;font-size:20px}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
+
+    .controls{display:flex;gap:12px;align-items:center;margin-top:18px}
+    .search{display:flex;gap:10px;flex:1}
+    input[type=text],select{background:var(--card);border:1px solid rgba(255,255,255,0.04);padding:10px 12px;border-radius:10px;color:inherit;outline:none;min-width:0}
+    button{background:linear-gradient(90deg,var(--gold),#f3d77a);border:none;padding:10px 14px;border-radius:10px;color:#081018;font-weight:700;cursor:pointer}
+    button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);font-weight:600}
+
+    .meta-row{display:flex;gap:12px;align-items:center;margin-top:14px;justify-content:space-between}
+    .fav-counter{color:var(--muted);font-size:14px}
+
+    main{margin-top:18px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.03);backdrop-filter:blur(6px);position:relative;overflow:hidden;transition:transform .18s ease, box-shadow .18s ease}
+    .card:hover{transform:translateY(-6px);box-shadow:0 18px 40px rgba(0,0,0,0.6)}
+    .poster{height:320px;border-radius:8px;background-size:cover;background-position:center;margin-bottom:12px}
+    .title{font-size:16px;font-weight:700;margin-bottom:6px}
+    .sub{font-size:13px;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+    .chip{padding:6px 10px;border-radius:999px;background:var(--glass);font-size:12px;color:var(--muted);}
+
+    .heart{position:absolute;top:12px;right:12px;background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.04);width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px}
+    .heart.active{background:linear-gradient(90deg,#ff6b6b,#ff9472);color:#081018}
+
+    /* modal */
+    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:20px;background:linear-gradient(180deg,rgba(0,0,0,0.6),rgba(0,0,0,0.7))}
+    .modal.open{display:flex}
+    .sheet{width:100%;max-width:960px;background:linear-gradient(180deg,#0b0b0b,#0f1113);border-radius:12px;padding:18px;border:1px solid rgba(255,255,255,0.04);display:flex;gap:18px}
+    .sheet .left{flex:0 0 320px}
+    .sheet .left .poster{height:460px}
+    .sheet .right{flex:1;color:#dbe6ef}
+    .right h2{margin:0 0 6px}
+    .meta{color:var(--muted);margin-bottom:12px}
+    .rating{font-weight:800;color:var(--gold)}
+    .stream-links a{display:inline-block;margin-right:8px;margin-top:8px;padding:8px 10px;border-radius:8px;background:#081018;color:var(--gold);text-decoration:none;border:1px solid rgba(255,255,255,0.03)}
+    .close-btn{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted);padding:8px 10px;border-radius:8px;cursor:pointer}
+
+    footer{margin-top:22px;color:var(--muted);font-size:13px;text-align:center}
+
+    @media(max-width:880px){.sheet{flex-direction:column}.sheet .left .poster{height:320px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="logo">MG</div>
+        <div>
+          <h1>Movie Recommender</h1>
+          <p class="lead">모던 블랙 & 골드 테마 — 간편한 영화 추천 데모</p>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div class="fav-counter">즐겨찾기: <strong id="favCount">0</strong></div>
+      </div>
+    </header>
+
+    <div class="controls">
+      <div class="search">
+        <input id="q" type="text" placeholder="제목으로 검색 (예: 인셉션)" />
+        <select id="genre"><option value="all">모든 장르</option></select>
+        <select id="sort">
+          <option value="default">정렬: 기본</option>
+          <option value="rating">평점 높은 순</option>
+          <option value="year">개봉연도 최신순</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button id="randomBtn">무작위 추천</button>
+        <button id="showFav" class="ghost">즐겨찾기 보기</button>
+      </div>
+    </div>
+
+    <div class="meta-row">
+      <div style="color:var(--muted)">총 영화 수: <span id="totalCount">0</span></div>
+      <div style="color:var(--muted);font-size:13px">Tip: 카드 또는 '상세보기'에서 리뷰와 스트리밍 링크를 확인하세요.</div>
+    </div>
+
+    <main>
+      <div id="grid" class="grid"></div>
+      <div id="empty" style="display:none;padding:40px;text-align:center;color:var(--muted)">검색 결과가 없습니다.</div>
+    </main>
+
+    <footer>이 파일을 <code>index.html</code>로 저장해 GitHub Pages에 올리면 바로 호스팅 됩니다.</footer>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal" class="modal" aria-hidden="true">
+    <div class="sheet" role="dialog" aria-modal="true">
+      <div class="left">
+        <div id="modalPoster" class="poster" style="background-image:url('')"></div>
+      </div>
+      <div class="right">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:center">
+          <div>
+            <h2 id="modalTitle">Title</h2>
+            <div class="meta"><span id="modalYear"></span> · <span id="modalGenre"></span></div>
+          </div>
+          <div style="text-align:right">
+            <div class="rating" id="modalRating">★ 0</div>
+            <button id="modalFav" class="close-btn">즐겨찾기</button>
+          </div>
+        </div>
+        <p id="modalDesc" style="color:var(--muted);margin-top:12px"></p>
+
+        <h3 style="margin-top:14px;margin-bottom:6px">비평가 리뷰</h3>
+        <p id="criticsBox" style="color:#cbd6dd"></p>
+
+        <h3 style="margin-top:12px;margin-bottom:6px">관객 리뷰 · 별점</h3>
+        <p id="audienceBox" style="color:#cbd6dd"></p>
+
+        <h3 style="margin-top:12px;margin-bottom:6px">볼 수 있는 서비스</h3>
+        <div id="streamBox" class="stream-links"></div>
+
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px">
+          <a id="imdbLink" class="stream-links" href="#" target="_blank" rel="noreferrer" style="color:var(--muted);text-decoration:underline">IMDb 페이지</a>
+          <button id="closeModal" class="close-btn">닫기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 데이터(영화 10개)
+    const MOVIES = [
+      {id:1,title:'기생충',year:2019,genre:['드라마','스릴러'],rating:8.6,critics:'사회 계층을 정교하게 그려낸 연출과 서사가 탁월하다는 평가.',audience:'강렬한 반전과 연기력에 대한 호평이 많음.',audienceStar:4.7,stream:[{name:'네트플릭스',url:'https://www.netflix.com'},{name:'웨이브',url:'https://www.wavve.com'}],poster:'https://picsum.photos/seed/parasite/800/1200',desc:'가난한 가족과 부유한 가족의 예기치 못한 만남이 불러온 사건을 다룬 사회극.',imdb:'https://www.imdb.com/title/tt6751668/'},
+      {id:2,title:'인셉션',year:2010,genre:['SF','스릴러'],rating:8.8,critics:'복잡하지만 치밀한 플롯과 시각적 완성도로 높은 평가.',audience:'도전적인 서사를 즐겼다는 반응이 우세.',audienceStar:4.6,stream:[{name:'Prime Video',url:'https://www.primevideo.com'}],poster:'https://picsum.photos/seed/inception/800/1200',desc:'꿈 속의 꿈을 무대로 펼쳐지는 심리 스릴러.',imdb:'https://www.imdb.com/title/tt1375666/'},
+      {id:3,title:'인터스텔라',year:2014,genre:['SF','드라마'],rating:8.6,critics:'과학적 상상력과 감성의 균형이 인상적이라는 평.',audience:'감동적인 가족 이야기와 웅장한 비주얼로 호평.',audienceStar:4.6,stream:[{name:'Prime Video',url:'https://www.primevideo.com'}],poster:'https://picsum.photos/seed/interstellar/800/1200',desc:'인류의 생존을 건 우주 탐사와 시간의 상대성에 관한 서사.',imdb:'https://www.imdb.com/title/tt0816692/'},
+      {id:4,title:'쇼생크 탈출',year:1994,genre:['드라마','범죄'],rating:9.3,critics:'희망과 인내를 그린 명작으로 손꼽힘.',audience:'전 세대를 관통하는 감동으로 사랑받음.',audienceStar:4.9,stream:[{name:'Prime Video',url:'https://www.primevideo.com'}],poster:'https://picsum.photos/seed/shawshank/800/1200',desc:'부당한 수감생활 속에서도 희망을 잃지 않는 이야기.',imdb:'https://www.imdb.com/title/tt0111161/'},
+      {id:5,title:'라라랜드',year:2016,genre:['뮤지컬','로맨스'],rating:8.0,critics:'화려한 연출과 음악, 색감이 돋보인다는 평가.',audience:'음악과 영상미에 매료되었다는 반응이 많음.',audienceStar:4.4,stream:[{name:'Netflix',url:'https://www.netflix.com'}],poster:'https://picsum.photos/seed/lalaland/800/1200',desc:'꿈을 좇는 두 예술가의 사랑과 선택을 그린 뮤지컬.',imdb:'https://www.imdb.com/title/tt3783958/'},
+      {id:6,title:'어벤져스: 엔드게임',year:2019,genre:['액션','SF'],rating:8.4,critics:'프랜차이즈의 결말로서 충분한 서사적 만족을 준다.',audience:'팬들이 열광한 집대성 이벤트 영화.',audienceStar:4.3,stream:[{name:'Disney+',url:'https://www.disneyplus.com'},{name:'Prime Video',url:'https://www.primevideo.com'}],poster:'https://picsum.photos/seed/avengers/800/1200',desc:'히어로들이 힘을 합쳐 우주적 위협에 맞서는 대서사시.',imdb:'https://www.imdb.com/title/tt4154796/'},
+      {id:7,title:'소울',year:2020,genre:['애니메이션','드라마'],rating:8.1,critics:'삶의 의미를 섬세하게 묘사했다는 평.',audience:'아이와 어른 모두에게 울림을 줌.',audienceStar:4.5,stream:[{name:'Disney+',url:'https://www.disneyplus.com'}],poster:'https://picsum.photos/seed/soul/800/1200',desc:'삶의 의미와 열정을 찾아가는 음악가의 영혼 여행.',imdb:'https://www.imdb.com/title/tt2948372/'},
+      {id:8,title:'위플래시',year:2014,genre:['드라마','음악'],rating:8.5,critics:'긴장감 넘치는 연출과 강렬한 연기력.',audience:'음악과 연기의 압도적 몰입감을 칭찬함.',audienceStar:4.4,stream:[{name:'Netflix',url:'https://www.netflix.com'}],poster:'https://picsum.photos/seed/whiplash/800/1200',desc:'스승과 제자의 갈등을 통해 재능과 집착을 탐구하는 작품.',imdb:'https://www.imdb.com/title/tt2582802/'},
+      {id:9,title:'기억의 밤',year:2017,genre:['스릴러','미스터리'],rating:6.6,critics:'한국형 스릴러로서 긴장감을 잘 유지한다는 평.',audience:'반전과 분위기를 즐긴다는 의견.',audienceStar:3.8,stream:[{name:'Watcha',url:'https://watcha.com'}],poster:'https://picsum.photos/seed/memory/800/1200',desc:'과거의 사건을 추적하며 일어나는 미스터리 스릴러.',imdb:'https://www.imdb.com/title/tt6826448/'},
+      {id:10,title:'코코',year:2017,genre:['애니메이션','가족'],rating:8.4,critics:'가족과 전통, 기억의 가치를 따뜻하게 그렸다.',audience:'감동적인 스토리와 음악으로 호평.',audienceStar:4.6,stream:[{name:'Disney+',url:'https://www.disneyplus.com'}],poster:'https://picsum.photos/seed/coco/800/1200',desc:'죽음과 가족의 의미를 음악과 함께 풀어내는 이야기.',imdb:'https://www.imdb.com/title/tt2380307/'}
+    ];
+
+    // 상태
+    let state = {q:'',genre:'all',sort:'default',favorites:[] ,showingFav:false};
+
+    // dom
+    const grid = document.getElementById('grid');
+    const qInput = document.getElementById('q');
+    const genreSelect = document.getElementById('genre');
+    const sortSelect = document.getElementById('sort');
+    const emptyBox = document.getElementById('empty');
+    const favCount = document.getElementById('favCount');
+    const totalCount = document.getElementById('totalCount');
+
+    const modal = document.getElementById('modal');
+    const modalPoster = document.getElementById('modalPoster');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalYear = document.getElementById('modalYear');
+    const modalGenre = document.getElementById('modalGenre');
+    const modalRating = document.getElementById('modalRating');
+    const modalDesc = document.getElementById('modalDesc');
+    const criticsBox = document.getElementById('criticsBox');
+    const audienceBox = document.getElementById('audienceBox');
+    const streamBox = document.getElementById('streamBox');
+    const imdbLink = document.getElementById('imdbLink');
+    const modalFav = document.getElementById('modalFav');
+    const closeModalBtns = Array.from(document.querySelectorAll('#closeModal'));
+
+    // 로컬스토리지로 즐겨찾기 유지
+    function loadFavs(){
+      try{ const s = localStorage.getItem('mr_favs'); state.favorites = s?JSON.parse(s):[] }catch(e){ state.favorites=[] }
+      updateFavUI();
+    }
+    function saveFavs(){ localStorage.setItem('mr_favs', JSON.stringify(state.favorites)); updateFavUI(); }
+    function updateFavUI(){ favCount.textContent = state.favorites.length; }
+
+    // 초기 장르 세팅
+    function populateGenres(){
+      const genres = [...new Set(MOVIES.flatMap(m=>m.genre))].sort();
+      genres.forEach(g=>{ const opt=document.createElement('option'); opt.value=g; opt.textContent=g; genreSelect.appendChild(opt); });
+    }
+
+    // 필터, 정렬
+    function filterAndSort(list){
+      let res = list.filter(m=>{
+        if(state.showingFav && !state.favorites.includes(m.id)) return false;
+        if(state.genre!=='all' && !m.genre.includes(state.genre)) return false;
+        if(state.q && !m.title.toLowerCase().includes(state.q.trim().toLowerCase())) return false;
+        return true;
+      });
+      if(state.sort==='rating') res.sort((a,b)=>b.rating - a.rating);
+      if(state.sort==='year') res.sort((a,b)=>b.year - a.year);
+      return res;
+    }
+
+    // 렌더
+    function render(){
+      const list = filterAndSort(MOVIES);
+      totalCount.textContent = MOVIES.length;
+      grid.innerHTML='';
+      if(list.length===0){ emptyBox.style.display='block'; return } else emptyBox.style.display='none';
+
+      list.forEach(m=>{
+        const card = document.createElement('div'); card.className='card';
+        const heart = document.createElement('button'); heart.className='heart'; heart.innerHTML = state.favorites.includes(m.id)?'♥':'♡';
+        if(state.favorites.includes(m.id)) heart.classList.add('active');
+        heart.onclick = (e)=>{ e.stopPropagation(); toggleFav(m.id, heart); };
+
+        const poster = document.createElement('div'); poster.className='poster'; poster.style.backgroundImage = `url('${m.poster}')`;
+        const title = document.createElement('div'); title.className='title'; title.textContent = m.title;
+        const sub = document.createElement('div'); sub.className='sub'; sub.innerHTML = `<span>${m.year}</span><span>★ ${m.rating}</span>`;
+
+        card.appendChild(heart);
+        card.appendChild(poster);
+        card.appendChild(title);
+        card.appendChild(sub);
+
+        card.onclick = ()=>openModal(m);
+        grid.appendChild(card);
+      });
+    }
+
+    // 모달 열기
+    function openModal(m){
+      modalPoster.style.backgroundImage = `url('${m.poster}')`;
+      modalTitle.textContent = m.title;
+      modalYear.textContent = m.year;
+      modalGenre.textContent = m.genre.join(', ');
+      modalRating.textContent = `★ ${m.rating} / 관객 ★ ${m.audienceStar}`;
+      modalDesc.textContent = m.desc;
+      criticsBox.textContent = m.critics;
+      audienceBox.textContent = `${m.audience} (★ ${m.audienceStar})`;
+      imdbLink.href = m.imdb || '#';
+
+      // 스트리밍 링크
+      streamBox.innerHTML = '';
+      if(m.stream && m.stream.length){
+        m.stream.forEach(s=>{
+          const a = document.createElement('a'); a.href = s.url; a.target='_blank'; a.rel='noreferrer'; a.textContent = s.name; a.className=''; streamBox.appendChild(a);
+        });
+      } else { streamBox.textContent = '현재 등록된 합법 스트리밍 정보 없음'; }
+
+      // modal fav status
+      modalFav.textContent = state.favorites.includes(m.id)?'즐겨찾기 해제':'즐겨찾기 추가';
+      modalFav.onclick = ()=>{ toggleFav(m.id); };
+
+      modal.classList.add('open'); modal.setAttribute('aria-hidden','false');
+    }
+
+    // 모달 닫기
+    document.querySelector('#modal .close-btn')?.addEventListener('click', ()=>{ modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); });
+    document.getElementById('modal').addEventListener('click',(e)=>{ if(e.target === document.getElementById('modal')){ modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); } });
+
+    // 즐겨찾기 토글
+    function toggleFav(id, heartEl){
+      if(state.favorites.includes(id)){
+        state.favorites = state.favorites.filter(x=>x!==id);
+      } else { state.favorites.push(id); }
+      saveFavs();
+      if(heartEl){ heartEl.textContent = state.favorites.includes(id)?'♥':'♡'; heartEl.classList.toggle('active', state.favorites.includes(id)); }
+      render();
+    }
+
+    // 무작위 추천
+    function randomRecommend(){
+      const list = filterAndSort(MOVIES);
+      if(list.length===0){ alert('조건에 맞는 영화가 없습니다. 필터를 초기화 해보세요.'); return }
+      const choice = list[Math.floor(Math.random() * list.length)];
+      openModal(choice);
+    }
+
+    // show favourites view
+    document.getElementById('showFav').addEventListener('click', ()=>{ state.showingFav = !state.showingFav; document.getElementById('showFav').classList.toggle('active', state.showingFav); render(); });
+
+    // bind
+    qInput.addEventListener('input', (e)=>{ state.q = e.target.value; render(); });
+    sortSelect.addEventListener('change', (e)=>{ state.sort = e.target.value; render(); });
+    document.getElementById('randomBtn').addEventListener('click', randomRecommend);
+
+    // 초기화
+    populateGenres(); loadFavs(); render();
+  </script>
+</body>
+</html>
