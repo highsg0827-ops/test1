@@ -12,6 +12,39 @@ movie recommender란?
 
 -작품 요약, 작품 한줄평, 작품 별점 등 작품의 다양한 정보 확인 가능.
 
+사용한 기술
+-----
+-chat gpt 이용하여 코드 생성
+
+`MOVIES` 배열은 추천 시스템의 데이터베이스 역할을 합니다.  
+
+**주요 필드**
+- `id` : 고유 식별자
+- `type` : movie / drama / anime
+- `title` : 제목
+- `year` : 출시 연도
+- `genre` : 장르 배열
+- `rating` : 평점
+- `poster` : 포스터 이미지 URL
+- `desc` : 작품 설명
+- `stream` : 시청 가능 플랫폼
+- `imdb` : IMDb 링크
+
+---
+
+사용자 입력과 UI 상태를 한 곳에서 관리하기 위한 객체입니다.
+
+```js
+state = {
+  q: '',               // 검색어
+  type: 'all',         // 콘텐츠 타입
+  genre: 'all',        // 장르
+  sort: 'default',     // 정렬 기준
+  favorites: [],       // 즐겨찾기 목록
+  showingFav: false    // 즐겨찾기만 보기
+}
+
+
 
 역할 분담
 ------------
